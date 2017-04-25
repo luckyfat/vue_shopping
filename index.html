@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/cart.css">
+    <link rel="stylesheet" href="font/iconfont.css">
+</head>
+<body>
+<div class="container" id="shop-cart">
+    <comp-header v-bind:title="'我的购物车'"></comp-header>
+    <div class="section">
+        <p class="tips">分期提示：在项目上左滑可删除项目</p>
+        <hospital-services
+                v-for="(x,index) in hospital_data"
+                :key="index"
+                :hospital="x.title"
+                :list="x.con"
+        >
+        </hospital-services>
+    </div>
+    <div class="footer">
+        <span class="left">{{$store.state.count}}总金额：{{total_cost}}</span>
+        <span class="right mfq" v-on:click="add">申请分期</span>
+    </div>
+</div>
+
+<script src="lib/vue.js"></script>
+<script src="lib/vue-resource.js"></script>
+<script src="lib/vuex.js"></script>
+<script src="component/header.js"></script>
+<script src="component/medicine-service.js"></script>
+<script>
+    //simple case about how to use vuex
+    let store = new Vuex.Store({
+        state:{
+            count:1
+        },
+        mutations:{
+            increment(state) {
+                state.count++
+            }
+        }
+    });
+    //global event bus
+    let bus = new Vue();
+    //create vue root
+    new Vue({
+        el: '#shop-cart',
+        data: {
+            hospital_data: null,
+            total_cost:0
+        },
+        store,
+        components: {
+            'hospital-services': hs
+        },
+        methods:{
+            add:function () {
+                this.$store.commit('increment')
+            }  
+        },
+        created: function () {
+            this.$http.get('data/data.json')
+                .then((data) => {
+                    this.hospital_data = data.data;
+                });
+
+            //从子组件列表中去掉header组件
+            //$parent  $children  $root
+            this.$children.shift();
+            let hs_arr = this.$children;
+            bus.$on('changed', (data)=> {
+                console.log(data);
+                let count = 0;
+                Array.from(hs_arr).forEach((hs,index)=>{
+                    Array.from(hs.$children).forEach((value,i)=>{
+                        count+=value.cost;
+                    });
+                });
+
+                this.total_cost = count;
+            })
+        }
+    })
+
+</script>
+</body>
+</html>
